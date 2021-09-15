@@ -2,10 +2,10 @@ import json
 
 
 PASSWORD = '12345678'
-APN = 'kuben93.ug'
+APN = 'kuben93.ug.kvk'
 IP = '10.168.24.146'  # Если настройка на клиента
 PORT = 9100
-MODE = 3  # 1 client, 2 server, 3 client + CSD, 4 server + CSD
+MODE = 2  # 1 client, 2 server, 3 client + CSD, 4 server + CSD
 
 
 def create_sms_mode():
