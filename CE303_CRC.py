@@ -34,7 +34,7 @@ def hex_encode(arg, mode):
 """
 
 
-def CE303HexPackage(mode, arg_string,  checkeven=False):
+def CE303HexPackage(mode, arg_string,  even=False):
     concat_string = f'{mode}2{arg_string}3'
     hex_array = list()
     for i in concat_string:
@@ -42,7 +42,7 @@ def CE303HexPackage(mode, arg_string,  checkeven=False):
             bin_string = bin_encode(i, 'int')
         else:
             bin_string = bin_encode(i, 'ord')
-        if checkeven:
+        if even:
             if bin_string.count('1') % 2 != 0:
                 hex_array.append(hex_encode(bin_string, True))
             else:
