@@ -15,10 +15,6 @@ def CE303CRC(string, check=False) -> str:
     return format(_CRC & 0xFF, '02X')
 
 
-# array2 = '52 31 02 54 49 4D 45 5F 28 29 03'
-# print(CE303CRC(array2, False))
-
-
 def bin_encode(arg, mode):
     if mode == 'int':
         return format(int(format(int(arg), '02X'), 16), 'b')
