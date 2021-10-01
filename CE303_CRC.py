@@ -1,16 +1,39 @@
 import binascii
+import sys
+from sys import platform
+from datetime import datetime
+from time import sleep
+from uart import UartSerialPort
+
+serial = UartSerialPort('COM12', 1.7)
+
+if platform.startswith('win'):
+    from colors import WinColors
+    c = WinColors()
+else:
+    from colors import Colors
+    c = Colors()
+
+
+def repeat(func):
+    def wrapper_repeat(*args, **kwargs):
+        for _ in range(3):
+            current_time = datetime.now().strftime('%d.%m.%Y %H:%M:%S.%f')
+            check, get_hex, tmp = func(*args, **kwargs)
+            print(f'[{current_time}] :{c.BLUE} >>', get_hex, c.END)
+            if check:
+                print(f'[{current_time}] :{c.FAIL} <<', tmp, c.END)
+                return check, get_hex, tmp
+            sleep(1)
+        print(f'{c.WARNING}Нет ответа от устройства.{c.END}')
+        sys.exit()
+    return wrapper_repeat
 
 
 class CE30X:
 
     def __init__(self, event):
-
         self.event = event
-
-        if self.event:
-            self.ascii = ['82', '03']
-        else:
-            self.ascii = ['02', '03']
 
     def CE303CRC(self, code_string):
         """
@@ -24,45 +47,45 @@ class CE30X:
                 _CRC += i
             else:
                 _CRC += i + bit
-        return format(_CRC & 0xFF, '02X')
+        return format(_CRC & 0x7F, '02X')
 
-    # @staticmethod
-    # def bin_encode(arg, mode):
-    #     if mode == 'int':
-    #         return format(int(format(int(arg), '02X'), 16), 'b')
-    #     elif mode == 'ord':
-    #         return format(int(format(ord(arg), '02X'), 16), 'b')
-
-    # @staticmethod
-    # def hex_encode(arg, mode):
-    #     if mode:
-    #         return format(int(arg, 2) + 0x80, '02X')
-    #     else:
-    #         return format(int(arg, 2), '02X')
+    @repeat
+    def exchange(self, command, count):
+        transfer = bytearray.fromhex(command)
+        print_line = ' '.join(map(lambda x: format(x, '02x'), transfer))
+        serial.write(transfer)
+        buffer = serial.read(count)
+        while buffer:
+            if len(buffer) == count:
+                return True, print_line, buffer.hex(' ', -1)
+            break
+        return False, print_line, buffer.hex(' ', -1)
 
     """
     Закодировать пакет
+    
+     - '\x01'
+     - '\x02'
+     - '\x03'
+     - '\x06'
+
     """
 
-    def CE303HexPackage(self, *args):
+    def CE303HexPackage(self, crc_byte=True, *args):
         hex_array = list()
-        for num, item in enumerate(args):
+        for item in args:
             for i in item:
                 binary = format(int(format(ord(i), '02X'), 16), 'b')
                 if self.event:
                     if binary.count('1') % 2 != 0:
                         hex_array.append(format(int(binary, 2) + 0x80, '02X'))
-                    else:
-                        hex_array.append(format(int(binary, 2), '02X'))
-                else:
-                    hex_array.append(format(int(binary, 2), '02X'))
-
-            hex_array.append(self.ascii[num])
-
-        hex_array.insert(0, '01')
+                        continue
+                hex_array.append(format(int(binary, 2), '02X'))
         tmp_package = ' '.join(hex_array)
         crc = self.CE303CRC(tmp_package)
-        return f'{tmp_package} {crc}'
+        if crc_byte:
+            return f'{tmp_package} {crc}'
+        return f'{tmp_package}'
 
     """
     Раскодировать пакет
@@ -84,16 +107,3 @@ class CE30X:
             except UnicodeDecodeError:
                 return "Ошибка в режиме проверки контроля четности"
         return ascii_string
-
-
-if __name__ == "__main__":
-
-    ce = CE30X(True)
-
-    encode_package = ce.CE303HexPackage('R1', 'TIME_()')  # D2 B1 82 D4 C9 4D C5 5F 28 A9 03
-    decode_package = ce.CE303ASCIIPackage(encode_package[:-3])  # R1TIME_()
-    crc_byte = ce.CE303CRC(encode_package[:-3])  # E7
-
-    print("Закодированный пакет : ", encode_package)
-    print("CRC : ", crc_byte)
-    print("Раскодированный пакет : ", decode_package)
