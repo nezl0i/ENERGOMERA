@@ -42,9 +42,7 @@ if __name__ == "__main__":
                                         command_line,
                                         '\x03'
                                         )
-    encode_package_2 = ce.CE303HexPackage(False,  # True-считаем CRC, False-не считаем
-                                          auth[1]
-                                          )
+    encode_package_2 = ce.CE303HexPackage(False, auth[1])  # True-считаем CRC, False-не считаем
 
     decode_package = ce.CE303ASCIIPackage(encode_package[:-3])  #
     crc_byte = ce.CE303CRC(encode_package[:-3])  #
